@@ -1,7 +1,7 @@
 # main.py
-# Punto de entrada del programa — Módulo 1
+# Punto de entrada del programa — Módulo 2 (con persistencia)
 
-from service import crear_usuario, listar_usuarios
+from service import crear_usuario, listar_usuarios, usuarios
 
 
 def mostrar_menu():
@@ -32,7 +32,7 @@ def solicitar_usuario():
 
 
 def mostrar_usuarios():
-    """Lista todos los usuarios registrados en memoria."""
+    """Lista todos los usuarios registrados (desde memoria, cargada del archivo)."""
     print("\n── Usuarios registrados ──")
     resumen = listar_usuarios()
 
@@ -44,7 +44,12 @@ def mostrar_usuarios():
 
 
 def main():
-    print("Sistema listo")
+    # Informa cuántos usuarios se cargaron desde el archivo al arrancar
+    total = len(usuarios)
+    if total:
+        print(f"Sistema listo — {total} usuario(s) cargado(s) desde archivo.")
+    else:
+        print("Sistema listo — sin registros previos.")
 
     while True:
         mostrar_menu()

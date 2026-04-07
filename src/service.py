@@ -1,5 +1,5 @@
 # service.py
-# Módulo de lógica de negocio para la gestión de usuarios en memoria
+# Módulo de lógica de negocio — ahora con persistencia en archivo
 
 from validate import (
     validar_id,
@@ -8,18 +8,19 @@ from validate import (
     validar_edad,
     validar_estado,
 )
+from file import load_data, save_data
 
-# ─── Estructuras de datos en memoria ────────────────────────────────────────
+# ─── Estructuras de datos (se inicializan desde archivo) ────────────────────
 
-usuarios = []            # Lista de diccionarios: cada elemento es un usuario
-ids_registrados = set()  # Set para garantizar IDs únicos
+usuarios = load_data()
+ids_registrados = {u["id"] for u in usuarios}  # Reconstruye el set desde el archivo
 
 
 # ─── Funciones de servicio ───────────────────────────────────────────────────
 
 def crear_usuario(id, nombre, correo, edad, estado):
     """
-    Recibe los campos del usuario, los valida y los guarda en memoria.
+    Valida, guarda en memoria y persiste en archivo.
     Retorna (True, mensaje) o (False, mensaje_de_error).
     """
     ok, id_val = validar_id(id, ids_registrados)
@@ -42,7 +43,6 @@ def crear_usuario(id, nombre, correo, edad, estado):
     if not ok:
         return False, estado_val
 
-    # Construir el diccionario del usuario
     nuevo_usuario = {
         "id": id_val,
         "nombre": nombre_val,
@@ -51,9 +51,9 @@ def crear_usuario(id, nombre, correo, edad, estado):
         "estado": estado_val,
     }
 
-    # Guardar en la lista y registrar el ID en el set
     usuarios.append(nuevo_usuario)
     ids_registrados.add(id_val)
+    save_data(usuarios)  # ← persiste inmediatamente tras cada creación
 
     return True, f"Usuario '{nombre_val}' creado exitosamente."
 
@@ -65,9 +65,7 @@ def listar_usuarios():
     if not usuarios:
         return []
 
-    resumen = []
-    for u in usuarios:
-        linea = f"[{u['id']}] {u['nombre']} | {u['correo']} | Edad: {u['edad']} | Estado: {u['estado']}"
-        resumen.append(linea)
-
-    return resumen
+    return [
+        f"[{u['id']}] {u['nombre']} | {u['correo']} | Edad: {u['edad']} | Estado: {u['estado']}"
+        for u in usuarios
+    ]
