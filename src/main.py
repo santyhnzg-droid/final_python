@@ -32,7 +32,8 @@ def solicitar_usuario():
     nombre_input = input("Nombre: ").strip()
     correo_input = input("Correo: ").strip()
     edad_input   = input("Edad: ").strip()
-    estado_input = input("Estado (Activo): ").strip()
+    estado_input = input("Estado (Activo/Inactivo): ").strip()
+
 
     exito, mensaje = new_register(id_input, nombre_input, correo_input, edad_input, estado_input)
     print(f"\n✔ {mensaje}" if exito else f"\n✘ Error: {mensaje}")
@@ -43,7 +44,7 @@ def solicitar_usuario():
 def mostrar_usuarios():
     print("\n── Usuarios registrados ──")
     print("Ordenar por: id | nombre | correo | edad | estado")
-    campo = input("Campo (Enter = id): ").strip() or "id"
+    campo = input("Campo (Enter = id): ").strip().lower() or "id"
 
     ok, resultado = list_records(ordenar_por=campo)
 
@@ -60,7 +61,7 @@ def mostrar_usuarios():
 
 def buscar_usuario():
     print("\n── Buscar usuario ──")
-    termino = input("Nombre o correo (parcial): ").strip()
+    termino = input("ID o Nombre (parcial): ").strip()
 
     ok, resultado = search_record(termino)
 
@@ -81,7 +82,7 @@ def actualizar_usuario():
     nombre_input = input("Nuevo nombre: ").strip() or None
     correo_input = input("Nuevo correo: ").strip() or None
     edad_input   = input("Nueva edad: ").strip() or None
-    estado_input = input("Nuevo estado (Activo): ").strip() or None
+    estado_input = input("Nuevo estado (Activo/Inactivo): ").strip() or None
 
     exito, mensaje = update_record(id_input, nombre_input, correo_input, edad_input, estado_input)
     print(f"\n✔ {mensaje}" if exito else f"\n✘ Error: {mensaje}")

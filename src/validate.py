@@ -1,4 +1,4 @@
-4# validate.py
+# validate.py
 # Módulo de validaciones para los campos de un usuario
 
 import re
@@ -45,7 +45,7 @@ def validar_correo(correo):
 
 def validar_edad(edad):
     """
-    Valida que la edad sea un número entero entre 1 y 120.
+    Valida que la edad sea un número entero entre 1 y 100.
     """
     try:
         edad = int(edad)
@@ -57,9 +57,10 @@ def validar_edad(edad):
 
 
 def validar_estado(estado):
-    if estado == "Activo":
-        return True, estado
+    estado_limpio = estado.strip().lower()
+    if estado_limpio == "activo":
+        return True, "Activo"
+    elif estado_limpio == "inactivo":
+        return True, "Inactivo"
     else:
-        return False, "Inactivo"
-
-     
+        return False, "El estado debe ser 'Activo' o 'Inactivo'"

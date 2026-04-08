@@ -86,7 +86,8 @@ def list_records(ordenar_por="id"):
 
 def search_record(termino):
     """
-    Busca usuarios cuyo nombre o correo contengan el término (sin distinción de mayúsculas).
+    Busca usuarios cuyo nombre, correo o ID contengan el término.
+    Para ID se usa coincidencia exacta (convertido a string).
     Usa list comprehension para el filtrado.
     Retorna (True, lista_de_resultados) o (False, mensaje).
     """
@@ -95,10 +96,12 @@ def search_record(termino):
     if not termino:
         return False, "El término de búsqueda no puede estar vacío."
 
-    # List comprehension con condición múltiple
+    # List comprehension con condición múltiple (incluye búsqueda por ID exacto)
     encontrados = [
         u for u in usuarios
-        if termino in u["nombre"].lower() or termino in u["correo"].lower()
+        if termino in u["nombre"].lower()
+        or termino in u["correo"].lower()
+        or termino == str(u["id"])          # Búsqueda exacta por ID
     ]
 
     if not encontrados:
