@@ -1,5 +1,6 @@
 # menu.py
 # Módulo 4 — Interfaz de usuario con colores (colorama)
+# Módulo 5 — Opción 6: generar registros falsos con faker
 
 from colorama import init, Fore, Style
 from service import (
@@ -10,6 +11,7 @@ from service import (
     delete_record,
     usuarios
 )
+from integration import generar_registros_falsos, previsualizar_registro  # ← M5
 
 # Inicializa colorama (autoreset=True para que los colores no se acumulen)
 init(autoreset=True)
@@ -25,6 +27,7 @@ def mostrar_menu():
     print("  3. Buscar usuario")
     print("  4. Actualizar usuario")
     print("  5. Eliminar usuario")
+    print(Fore.MAGENTA + "  6. Generar registros falsos (faker)" + Style.RESET_ALL)  # ← M5
     print("  0. Salir")
     print(Fore.CYAN + "=" * 40 + Style.RESET_ALL)
 
@@ -111,6 +114,39 @@ def eliminar_usuario():
         print(Fore.RED + f"\n✘ Error: {mensaje}")
 
 
+# ─── NUEVO M5 ────────────────────────────────────────────────────────────────
+
+def generar_falsos():
+    """
+    Muestra un ejemplo, pregunta cuántos registros generar y un estado
+    opcional, luego llama a generar_registros_falsos() de integration.py.
+    """
+    print(Fore.MAGENTA + "\n── Generar registros falsos ──" + Style.RESET_ALL)
+
+    # Vista previa antes de confirmar
+    ejemplo = previsualizar_registro()
+    print(Fore.CYAN + "\nEjemplo del registro que se generará:" + Style.RESET_ALL)
+    for clave, valor in ejemplo.items():
+        print(f"  {clave}: {valor}")
+
+    print()
+    cantidad_input = input("¿Cuántos registros generar? (Enter = 10): ").strip()
+    cantidad = int(cantidad_input) if cantidad_input.isdigit() else 10
+
+    estado_input = input("¿Forzar estado? (Activo / Inactivo / Enter = aleatorio): ").strip().capitalize()
+    kwargs_extra = {}
+    if estado_input in ("Activo", "Inactivo"):
+        kwargs_extra["estado"] = estado_input
+
+    exito, mensaje = generar_registros_falsos(cantidad, **kwargs_extra)
+
+    if exito:
+        print(Fore.GREEN + f"\n✔ {mensaje}")
+        print(Fore.CYAN + f"  Total de usuarios ahora: {len(usuarios)}" + Style.RESET_ALL)
+    else:
+        print(Fore.RED + f"\n✘ Error: {mensaje}")
+
+
 def main_menu():
     """Bucle principal del menú."""
     total = len(usuarios)
@@ -123,7 +159,7 @@ def main_menu():
         mostrar_menu()
         try:
             opcion = input("Elige una opción: ").strip()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             print(Fore.YELLOW + "\n\nPrograma interrumpido. ¡Hasta luego!")
             break
 
@@ -137,6 +173,8 @@ def main_menu():
             actualizar_usuario()
         elif opcion == "5":
             eliminar_usuario()
+        elif opcion == "6":          
+            generar_falsos()
         elif opcion == "0":
             print(Fore.GREEN + "\n¡Hasta luego!")
             break
