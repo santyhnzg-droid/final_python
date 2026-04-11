@@ -1,11 +1,12 @@
 # integration.py
-# Módulo 5 — Funciones avanzadas + Librería externa (faker)
-#
-# Responsabilidad: generar registros falsos pero realistas usando faker,
-# aplicando *args y **kwargs para crear una función genérica de construcción.
+# Módulo 6 — Refactor: type hints, docstrings, validación centralizada,
+# sin duplicación, sin 'global'
+
+from typing import Any
 
 from faker import Faker
-from service import usuarios, ids_registrados, save_data
+from validate import validar_cantidad
+from service import usuarios, ids_registrados, _persist
 
 # Instancia de Faker en español
 fake = Faker("es_ES")
@@ -13,85 +14,94 @@ fake = Faker("es_ES")
 
 # ─── Función genérica con *args y **kwargs ───────────────────────────────────
 
-def construir_registro(*args, **kwargs):
+def construir_registro(*args: str, **kwargs: Any) -> dict[str, Any]:
     """
-    Construye un diccionario de registro de forma genérica.
+    Construye un diccionario de registro de forma genérica usando Faker.
 
-    *args   → campos que se quieren incluir del perfil faker completo.
-              Si está vacío, se incluyen todos los campos estándar.
-              Ejemplo: construir_registro("nombre", "correo")
+    No persiste ni modifica el estado global — es una función pura
+    de construcción; el guardado lo delega generar_registros_falsos().
 
-    **kwargs → valores que sobreescriben o añaden campos al registro generado.
-               Ejemplo: construir_registro(estado="Inactivo")
+    Args:
+        *args: Nombres de campos a incluir del perfil completo.
+               Si está vacío, se incluyen todos los campos estándar.
+               El campo 'id' siempre se conserva.
+        **kwargs: Valores que sobreescriben o añaden campos al registro.
 
-    Retorna un dict listo para guardar.
+    Returns:
+        Diccionario con los datos del registro generado.
     """
-    # Genera un ID único que no colisione con los existentes
-    nuevo_id = max(ids_registrados, default=0) + 1
-    while nuevo_id in ids_registrados:
-        nuevo_id += 1
+    nuevo_id = _siguiente_id_disponible()
 
-    # Perfil base generado por faker
-    perfil_completo = {
+    perfil: dict[str, Any] = {
         "id":     nuevo_id,
-        "nombre": fake.first_name() + " " + fake.last_name(),
+        "nombre": f"{fake.first_name()} {fake.last_name()}",
         "correo": fake.email(),
         "edad":   fake.random_int(min=18, max=70),
         "estado": fake.random_element(elements=("Activo", "Inactivo")),
     }
 
-    # Si se pasaron campos específicos en *args, filtra solo esos
-    # (siempre se conserva "id" porque es obligatorio)
     if args:
         campos_pedidos = {"id"} | set(args)
-        perfil_completo = {
-            k: v for k, v in perfil_completo.items()
-            if k in campos_pedidos
-        }
+        perfil = {k: v for k, v in perfil.items() if k in campos_pedidos}
 
-    # **kwargs sobreescribe o añade campos al resultado final
-    perfil_completo.update(kwargs)
-
-    return perfil_completo
+    perfil.update(kwargs)
+    return perfil
 
 
-# ─── Función principal: generar N registros y guardarlos ────────────────────
-
-def generar_registros_falsos(n=10, **kwargs):
+def generar_registros_falsos(n: Any = 10, **kwargs: Any) -> tuple[bool, str]:
     """
-    Genera n registros falsos y los persiste en el archivo JSON.
+    Genera `n` registros falsos y los persiste en el archivo JSON.
 
-    n       → cantidad de registros a generar (por defecto 10).
-    **kwargs → campos fijos que tendrán TODOS los registros generados.
-               Ejemplo: generar_registros_falsos(5, estado="Activo")
+    La validación de `n` se delega a validar_cantidad() en validate.py
+    (antes estaba duplicada aquí y en menu.py).
 
-    Retorna (True, mensaje) o (False, mensaje_error).
+    Args:
+        n: Cantidad de registros a generar (por defecto 10).
+        **kwargs: Campos fijos que tendrán todos los registros generados.
+
+    Returns:
+        (True, mensaje_ok) o (False, mensaje_error).
     """
-    if not isinstance(n, int) or n < 1:
-        return False, "La cantidad debe ser un número entero mayor a 0."
+    ok, resultado = validar_cantidad(n)
+    if not ok:
+        return False, resultado
 
-    generados = []
+    cantidad: int = resultado
 
-    for _ in range(n):
+    for _ in range(cantidad):
         registro = construir_registro(**kwargs)
-
-        # Registra el ID en memoria para que el siguiente no colisione
         ids_registrados.add(registro["id"])
         usuarios.append(registro)
-        generados.append(registro)
 
-    save_data(usuarios)
-
-    return True, f"{n} registros falsos generados y guardados correctamente."
+    _persist()
+    return True, f"{cantidad} registros falsos generados y guardados correctamente."
 
 
-# ─── Función de vista previa (sin guardar) ──────────────────────────────────
-
-def previsualizar_registro(**kwargs):
+def previsualizar_registro(**kwargs: Any) -> dict[str, Any]:
     """
-    Genera y muestra 1 registro de ejemplo sin guardarlo.
+    Genera y devuelve 1 registro de ejemplo sin guardarlo ni modificar estado.
+
     Útil para que el usuario vea el formato antes de generar en masa.
+
+    Args:
+        **kwargs: Campos fijos a aplicar al ejemplo.
+
+    Returns:
+        Diccionario con los datos del registro de ejemplo.
     """
-    ejemplo = construir_registro(**kwargs)
-    # No lo agrega a usuarios ni guarda — solo muestra
-    return ejemplo
+    return construir_registro(**kwargs)
+
+
+# ─── Helper privado ─────────────────────────────────────────────────────────
+
+def _siguiente_id_disponible() -> int:
+    """
+    Calcula el próximo ID disponible que no colisione con los existentes.
+
+    Returns:
+        Entero positivo único no presente en ids_registrados.
+    """
+    siguiente = max(ids_registrados, default=0) + 1
+    while siguiente in ids_registrados:
+        siguiente += 1
+    return siguiente
